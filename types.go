@@ -13,6 +13,18 @@ var (
 	errValueNil = errors.New("value cannot be nil")
 )
 
+// ReadOptions holds the optional parameters for 'read operation'. The
+// 'read operation' includes Get, Find and NewIterator.
+type ReadOptions struct {
+	// DontFillCache defines whether block reads for this 'read operation'
+	// should be cached. If false then the block will be cached. This does
+	// not affects already cached block.
+	//
+	// The default value is false.
+	// Supported by goleveldb
+	DontFillCache bool
+}
+
 // DB is the main interface for all database backends. DBs are concurrency-safe. Callers must call
 // Close on the database when done.
 //
@@ -71,6 +83,19 @@ type DB interface {
 
 	// Compact explicitly
 	Compact(start, end []byte) error
+}
+
+// Optional extension: only backends that support per-read options implement this.
+type DBReaderWithOpts interface {
+	GetWithOpts(key []byte, opts *ReadOptions) ([]byte, error)
+}
+
+// Helper: callers can pass options without knowing if the backend supports them.
+func GetWithOpts(db DB, key []byte, opts *ReadOptions) ([]byte, error) {
+	if ro, ok := db.(DBReaderWithOpts); ok {
+		return ro.GetWithOpts(key, opts)
+	}
+	return db.Get(key)
 }
 
 // Batch represents a group of writes. They may or may not be written atomically depending on the

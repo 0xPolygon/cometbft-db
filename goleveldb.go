@@ -42,10 +42,22 @@ func NewGoLevelDBWithOpts(name string, dir string, o *opt.Options) (*GoLevelDB, 
 
 // Get implements DB.
 func (db *GoLevelDB) Get(key []byte) ([]byte, error) {
+	return db.GetWithOpts(key, nil)
+}
+
+func (db *GoLevelDB) GetWithOpts(key []byte, opts *ReadOptions) ([]byte, error) {
 	if len(key) == 0 {
 		return nil, errKeyEmpty
 	}
-	res, err := db.db.Get(key, nil)
+	var readOptions *opt.ReadOptions
+
+	if opts != nil {
+		readOptions = &opt.ReadOptions{
+			DontFillCache: opts.DontFillCache,
+		}
+	}
+
+	res, err := db.db.Get(key, readOptions)
 	if err != nil {
 		if err == errors.ErrNotFound {
 			return nil, nil
