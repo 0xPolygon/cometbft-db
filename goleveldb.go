@@ -191,20 +191,37 @@ func (db *GoLevelDB) NewBatch() Batch {
 
 // Iterator implements DB.
 func (db *GoLevelDB) Iterator(start, end []byte) (Iterator, error) {
+	return db.IteratorWithOpts(start, end, nil)
+}
+
+// IteratorWithOpts implements DBIteratorWithOpts.
+func (db *GoLevelDB) IteratorWithOpts(start, end []byte, opts *ReadOptions) (Iterator, error) {
 	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
 		return nil, errKeyEmpty
 	}
-	itr := db.db.NewIterator(&util.Range{Start: start, Limit: end}, nil)
+	itr := db.db.NewIterator(&util.Range{Start: start, Limit: end}, toLevelDBReadOptions(opts))
 	return newGoLevelDBIterator(itr, start, end, false), nil
 }
 
 // ReverseIterator implements DB.
 func (db *GoLevelDB) ReverseIterator(start, end []byte) (Iterator, error) {
+	return db.ReverseIteratorWithOpts(start, end, nil)
+}
+
+// ReverseIteratorWithOpts implements DBIteratorWithOpts.
+func (db *GoLevelDB) ReverseIteratorWithOpts(start, end []byte, opts *ReadOptions) (Iterator, error) {
 	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
 		return nil, errKeyEmpty
 	}
-	itr := db.db.NewIterator(&util.Range{Start: start, Limit: end}, nil)
+	itr := db.db.NewIterator(&util.Range{Start: start, Limit: end}, toLevelDBReadOptions(opts))
 	return newGoLevelDBIterator(itr, start, end, true), nil
+}
+
+func toLevelDBReadOptions(opts *ReadOptions) *opt.ReadOptions {
+	if opts == nil {
+		return nil
+	}
+	return &opt.ReadOptions{DontFillCache: opts.DontFillCache}
 }
 
 // Compact range

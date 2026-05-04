@@ -98,6 +98,30 @@ func GetWithOpts(db DB, key []byte, opts *ReadOptions) ([]byte, error) {
 	return db.Get(key)
 }
 
+// Optional extension: only backends that support per-iteration options implement this.
+// Use the IteratorWithOpts/ReverseIteratorWithOpts helpers to call into it safely; callers
+// that hit a backend without support transparently fall back to the plain iterator.
+type DBIteratorWithOpts interface {
+	IteratorWithOpts(start, end []byte, opts *ReadOptions) (Iterator, error)
+	ReverseIteratorWithOpts(start, end []byte, opts *ReadOptions) (Iterator, error)
+}
+
+// Helper: callers can pass options without knowing if the backend supports them.
+func IteratorWithOpts(db DB, start, end []byte, opts *ReadOptions) (Iterator, error) {
+	if ro, ok := db.(DBIteratorWithOpts); ok {
+		return ro.IteratorWithOpts(start, end, opts)
+	}
+	return db.Iterator(start, end)
+}
+
+// Helper: callers can pass options without knowing if the backend supports them.
+func ReverseIteratorWithOpts(db DB, start, end []byte, opts *ReadOptions) (Iterator, error) {
+	if ro, ok := db.(DBIteratorWithOpts); ok {
+		return ro.ReverseIteratorWithOpts(start, end, opts)
+	}
+	return db.ReverseIterator(start, end)
+}
+
 // Batch represents a group of writes. They may or may not be written atomically depending on the
 // backend. Callers must call Close on the batch when done.
 //
